@@ -18,9 +18,7 @@ extern "C" {
 typedef struct _TREE_ELEMENT{
     struct _TREE_ELEMENT *p_left;
     struct _TREE_ELEMENT *p_right;
-    uint32_t src_ip;
-    uint32_t dst_ip;
-    uint16_t dst_port;
+    uint32_t ip;
     unsigned int octets;
     unsigned int packets;
 } TREE_ELEMENT;

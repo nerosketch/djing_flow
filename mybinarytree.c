@@ -19,9 +19,9 @@
 static inline char tree_compare_element(const TREE_ELEMENT *a, const TREE_ELEMENT *b)
 {
 	char r;
-	if(a->src_ip < b->src_ip)
+	if(a->ip < b->ip)
 		r = GT;
-	else if(a->src_ip > b->src_ip)
+	else if(a->ip > b->ip)
 		r = LT;
 	else
 		r = EQ;
