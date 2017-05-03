@@ -1,7 +1,6 @@
 #include <libconfig.h>
 #include <string.h>
 #include <stdint.h>
-#include "mylist.h"
 #include "conf.h"
 
 
