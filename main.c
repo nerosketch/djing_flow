@@ -38,14 +38,34 @@ void print_recursive(const TREE_ELEMENT *p_tree, time_t current_timestamp, bool 
 	if(p_tree->p_right != NULL)
 		print_recursive(p_tree->p_right, current_timestamp, false);
 
-	printf("(%ju,0x%x,0x%x,%hu,%u,%u)", current_timestamp,
-		p_tree->src_ip, p_tree->dst_ip, p_tree->dst_port, p_tree->octets, p_tree->packets);
+	printf("(%ju,%u,%u,%u)", current_timestamp,
+		p_tree->ip,  p_tree->octets, p_tree->packets);
 
 	if(first)
 		printf(";\n");
 	else
 		printf(",\n");
 
+}
+
+
+static inline bool fill_item_data(TREE_ELEMENT *p_item, const char *rec, struct fts3rec_offsets *fo)
+{
+
+	uint32_t dst_ip = *((uint32_t*)(rec+fo->dstaddr));
+	uint32_t src_ip = *((uint32_t*)(rec+fo->srcaddr));
+
+	p_item->octets = *((uint32_t*)(rec+fo->dOctets));
+	p_item->packets = *((uint32_t*)(rec+fo->dPkts));
+
+	if( is_ip_in_local_net( src_ip ) )
+		p_item->ip = src_ip;
+	else  if( is_ip_in_local_net( dst_ip ) )
+		p_item->ip = dst_ip;
+	else
+		return false;
+
+	return true;
 }
 
 
@@ -87,15 +107,13 @@ int main()
 
 	printf("CREATE TABLE IF NOT EXISTS %s (\n", table_name);
 	printf("`cur_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n"
-		"`src_ip` INT(10) UNSIGNED NOT NULL,\n"\
-		"`dst_ip` INT(10) UNSIGNED NOT NULL,\n"\
-		"`dst_port` smallint(5) unsigned NOT NULL DEFAULT 0,\n"\
+		"`ip` INT(10) UNSIGNED NOT NULL,\n"\
 		"`octets` INT unsigned NOT NULL DEFAULT 0,\n"\
 		"`packets` INT unsigned NOT NULL DEFAULT 0\n"\
 		") ENGINE=MyISAM DEFAULT CHARSET=utf8;\n");
 
 
-	printf("INSERT INTO %s(`cur_time`,`src_ip`, `dst_ip`, `dst_port`, `octets`, `packets`) VALUES\n", table_name);
+	printf("INSERT INTO %s(`cur_time`,`ip`,`octets`,`packets`) VALUES\n", table_name);
 
 	rec = ftio_read(&ftio);
 	if(!rec){
@@ -107,11 +125,7 @@ int main()
 
 	TREE_ELEMENT tmp_item;
 	tree_init_tree(&tmp_item);
-	tmp_item.dst_ip = *((uint32_t*)(rec+fo.dstaddr));
-	tmp_item.dst_port = *((uint16_t*)(rec+fo.dstport));
-	tmp_item.src_ip = *((uint32_t*)(rec+fo.srcaddr));
-	tmp_item.octets = *((uint32_t*)(rec+fo.dOctets));
-	tmp_item.packets = *((uint32_t*)(rec+fo.dPkts));
+	fill_item_data(&tmp_item, rec, &fo);
 
 
 	TREE_ELEMENT tree_root;
@@ -135,17 +149,9 @@ int main()
 		if( !rec )
 			break;
 
-		tmp_item.dst_ip = *((uint32_t*)(rec+fo.dstaddr));
-		tmp_item.dst_port = *((uint16_t*)(rec+fo.dstport));
-		tmp_item.src_ip = *((uint32_t*)(rec+fo.srcaddr));
-		tmp_item.octets = *((uint32_t*)(rec+fo.dOctets));
-		tmp_item.packets = *((uint32_t*)(rec+fo.dPkts));
-
-		if(
-			is_ip_in_local_net(tmp_item.src_ip) ||
-			is_ip_in_local_net(tmp_item.dst_ip)
-		)
+		if( fill_item_data(&tmp_item, rec, &fo) )
 			tree_find_item(&tree_root, &tmp_item);
+
 
 	}
 	ftio_close(&ftio);
