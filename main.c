@@ -79,7 +79,6 @@ int main()
 	struct ftver ftv;
 	char *rec;
 	struct fts3rec_offsets fo;
-	//struct fts3rec_all cur;
 	DJING_CONF_STRUCT conf;
 	
 	time_t current_timestamp = time(NULL);
@@ -125,33 +124,24 @@ int main()
 
 	TREE_ELEMENT tmp_item;
 	tree_init_tree(&tmp_item);
-	fill_item_data(&tmp_item, rec, &fo);
 
 
 	TREE_ELEMENT tree_root;
 	tree_init_tree(&tree_root);
-	memcpy(&tree_root, &tmp_item, sizeof(TREE_ELEMENT));
+
+
+	if( fill_item_data(&tmp_item, rec, &fo) )
+		memcpy(&tree_root, &tmp_item, sizeof(TREE_ELEMENT));
 
 
 	while(true)
 	{
-		/*cur.dOctets = ((uint32_t*)(rec+fo.dOctets));
-		cur.dPkts = ((uint32_t*)(rec+fo.dPkts));
-		cur.srcaddr = ((uint32_t*)(rec+fo.srcaddr));
-		cur.dstaddr = ((uint32_t*)(rec+fo.dstaddr));
-		cur.dstport = ((uint16_t*)(rec+fo.dstport));
-		cur.srcport = ((uint16_t*)(rec+fo.srcport));
-		cur.prot = ((uint8_t*)(rec+fo.prot));
-		fmt_ipv4(fmt_buf1, *cur.srcaddr, FMT_PAD_RIGHT);
-		fmt_ipv4(fmt_buf2, *cur.dstaddr, FMT_PAD_RIGHT);*/
-
 		rec = ftio_read(&ftio);
 		if( !rec )
 			break;
 
 		if( fill_item_data(&tmp_item, rec, &fo) )
 			tree_find_item(&tree_root, &tmp_item);
-
 
 	}
 	ftio_close(&ftio);
