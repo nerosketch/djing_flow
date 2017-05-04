@@ -1,10 +1,10 @@
-CC=gcc
+CC=cc
 
 CFLAGS=-c -Wall -O2 -std=c99
 #CFLAGS=-c -Wall -O0 -std=c99 -g -fvar-tracking
 
-LDFLAGS=-lft -lconfig
-SOURCES=conf.c main.c mybinarytree.c tests.c
+LDFLAGS=-lft
+SOURCES=main.c mybinarytree.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=djing_flow
 

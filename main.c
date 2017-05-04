@@ -7,9 +7,8 @@
 #include <stdbool.h>
 #include <time.h>
 #include <ftlib.h>
-#include "conf.h"
+//#include "conf.h"
 #include "mybinarytree.h"
-//#include "tests.h"
 
 
 #define FLOW_COLS		8
@@ -39,7 +38,7 @@ void print_recursive(const TREE_ELEMENT *p_tree, time_t current_timestamp, bool 
 		print_recursive(p_tree->p_right, current_timestamp, false);
 
 	printf("(%ju,%u,%u,%u)", current_timestamp,
-		p_tree->ip,  p_tree->octets, p_tree->packets);
+				p_tree->ip,  p_tree->octets, p_tree->packets);
 
 	if(first)
 		printf(";\n");
@@ -71,25 +70,22 @@ static inline bool fill_item_data(TREE_ELEMENT *p_item, const char *rec, struct 
 
 int main()
 {
-	/*main_test();
-	return 0;*/
-
 	char table_name[19] = {0};
 	struct ftio ftio;
 	struct ftver ftv;
 	char *rec;
 	struct fts3rec_offsets fo;
-	DJING_CONF_STRUCT conf;
-	
+	//DJING_CONF_STRUCT conf;
+
 	time_t current_timestamp = time(NULL);
 
-	memset(&conf, 0, sizeof(DJING_CONF_STRUCT));
+	/*memset(&conf, 0, sizeof(DJING_CONF_STRUCT));
 	const char* config_fname = "./djing_flow.conf";
 	if(read_config(&conf, config_fname) != E_SUCCESS){
 		fprintf(stderr, "ERROR: config '%s' not read\n", config_fname);
 		return -1;
-	}
-	
+	}*/
+
 	if (ftio_init(&ftio, 0, FT_IO_FLAG_READ) < 0)
 	    fterr_errx(1, "ftio_init(): failed");
 
@@ -114,24 +110,26 @@ int main()
 
 	printf("INSERT INTO %s(`cur_time`,`ip`,`octets`,`packets`) VALUES\n", table_name);
 
-	rec = ftio_read(&ftio);
-	if(!rec){
-		perror("ERROR: flow not read\n");
-		ftio_close(&ftio);
-		return -1;
-	}
-
 
 	TREE_ELEMENT tmp_item;
 	tree_init_tree(&tmp_item);
-
 
 	TREE_ELEMENT tree_root;
 	tree_init_tree(&tree_root);
 
 
-	if( fill_item_data(&tmp_item, rec, &fo) )
-		memcpy(&tree_root, &tmp_item, sizeof(TREE_ELEMENT));
+	while(true)
+	{
+		rec = ftio_read(&ftio);
+		if( !rec )
+			break;
+
+		if( fill_item_data(&tmp_item, rec, &fo) )
+		{
+			memcpy(&tree_root, &tmp_item, sizeof(TREE_ELEMENT));
+			break;
+		}
+	}
 
 
 	while(true)
