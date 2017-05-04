@@ -23,3 +23,8 @@ for convert netflow data run:
 ### Services
 You may find units for systemd, that is: djing_rotate.service, and djing_rotate.timer.
 Edit that for your requirements
+
+This app compress each session for ip for each one minute. This means that if there are several sessions per minute, then the application will leave only one record with the sum of bytes and packets of each session.
+For example, if you have two sessions for ip 10.10.10.2 with two octets and bytes, application leave one record with the sum of records of octets and bytes for each session.
+The algorithm is realized through the binary tree. Left leaf is a ip that above then next ip, and right ip that more then next ip.
+Address we take only one of the source and destination addresses, the one that is on the subnet 10.0.0.0/8.
