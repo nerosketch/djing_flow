@@ -101,7 +101,7 @@ int main()
 	curtime(table_name, 19, "flowstat_%d%m%Y");
 
 	printf("CREATE TABLE IF NOT EXISTS %s (\n", table_name);
-	printf("`cur_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n"
+	printf("`cur_time` INT(10) UNSIGNED NOT NULL,\n"
 		"`ip` INT(10) UNSIGNED NOT NULL,\n"\
 		"`octets` INT unsigned NOT NULL DEFAULT 0,\n"\
 		"`packets` INT unsigned NOT NULL DEFAULT 0\n"\
