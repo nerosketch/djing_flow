@@ -68,10 +68,20 @@ static inline bool fill_item_data(TREE_ELEMENT *p_item, const char *rec, struct 
 }
 
 
+
+void out_update_cache_query(const TREE_ELEMENT *p_item, const time_t *p_current_timestamp){
+	printf("INSERT INTO flowcache(ip, last_time, octets, packets) "
+	"VALUES(%u, %lld, %ju, %u) "
+	"ON DUPLICATE KEY UPDATE last_time=%lld, octets=%u, packets=%li;\n",
+			p_item->ip, *p_current_timestamp, p_item->octets, p_item->packets,
+			*p_current_timestamp, p_item->octets, p_item->packets);
+}
+
+
 int main()
 {
 	char table_name[19] = {0};
-	struct ftio ftio;
+	struct ftio oftio;
 	struct ftver ftv;
 	char *rec;
 	struct fts3rec_offsets fo;
@@ -86,12 +96,12 @@ int main()
 		return -1;
 	}*/
 
-	if (ftio_init(&ftio, 0, FT_IO_FLAG_READ) < 0)
+	if (ftio_init(&oftio, 0, FT_IO_FLAG_READ) < 0)
 	    fterr_errx(1, "ftio_init(): failed");
 
-	ftio_get_ver(&ftio, &ftv);
+	ftio_get_ver(&oftio, &ftv);
 	fts3rec_compute_offsets(&fo, &ftv);
-	if (ftio_check_xfield(&ftio, /*FT_XFIELD_UNIX_SECS| FT_XFIELD_UNIX_NSECS|*/
+	if (ftio_check_xfield(&oftio, /*FT_XFIELD_UNIX_SECS| FT_XFIELD_UNIX_NSECS|*/
 		FT_XFIELD_DPKTS | FT_XFIELD_DOCTETS | FT_XFIELD_SRCADDR | FT_XFIELD_DSTADDR |
 		FT_XFIELD_SRCPORT | FT_XFIELD_DSTPORT | FT_XFIELD_PROT)) {
 			fterr_warnx("Flow record missing required field for format.");
@@ -105,7 +115,7 @@ int main()
 		"`ip` INT(10) UNSIGNED NOT NULL,\n"\
 		"`octets` INT unsigned NOT NULL DEFAULT 0,\n"\
 		"`packets` INT unsigned NOT NULL DEFAULT 0\n"\
-		") ENGINE=MyISAM DEFAULT CHARSET=utf8;\n");
+		") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n");
 
 
 	printf("INSERT INTO %s(`cur_time`,`ip`,`octets`,`packets`) VALUES\n", table_name);
@@ -120,7 +130,7 @@ int main()
 
 	while(true)
 	{
-		rec = ftio_read(&ftio);
+		rec = ftio_read(&oftio);
 		if( !rec )
 			break;
 
@@ -134,7 +144,7 @@ int main()
 
 	while(true)
 	{
-		rec = ftio_read(&ftio);
+		rec = ftio_read(&oftio);
 		if( !rec )
 			break;
 
@@ -142,11 +152,11 @@ int main()
 			tree_find_item(&tree_root, &tmp_item);
 
 	}
-	ftio_close(&ftio);
-
+	ftio_close(&oftio);
 
 	print_recursive(&tree_root, current_timestamp, true);
 
+	tree_bypass_leafs(&tree_root, &out_update_cache_query, &current_timestamp);
 
 	tree_free(&tree_root, false);
 

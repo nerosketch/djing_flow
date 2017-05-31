@@ -40,6 +40,13 @@ typedef struct _TREE_ELEMENT{
     memset(p_tree, 0, sizeof(TREE_ELEMENT))
 
 
+/*
+ * Обходим дерево и передаём каждый лист в func
+ */
+void tree_bypass_leafs(TREE_ELEMENT *p_tree,
+        void (*func)(const TREE_ELEMENT*, const time_t *),
+        const time_t *p_current_timestamp);
+
 
 /*
  * Пытаемся найти в дереве @p_tree лист @p_item, если не

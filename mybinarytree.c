@@ -41,6 +41,27 @@ TREE_ELEMENT *tree_allocate_new(const TREE_ELEMENT *p_item)
 
 
 /*
+ * Обходим дерево в направлени от крайних листьев к корню,
+ * и передаём каждый лист в func
+ */
+void tree_bypass_leafs(TREE_ELEMENT *p_tree,
+		void (*func)(const TREE_ELEMENT*, const time_t*),
+		const time_t *p_current_timestamp)
+{
+	if(p_tree == NULL)
+		return;
+
+	if(p_tree->p_left != NULL)
+		tree_bypass_leafs(p_tree->p_left, func, p_current_timestamp);
+
+	if(p_tree->p_right != NULL)
+		tree_bypass_leafs(p_tree->p_right, func, p_current_timestamp);
+
+	func(p_tree, p_current_timestamp);
+}
+
+
+/*
  * Пытаемся найти в дереве @p_tree лист @p_item, если не
  * находим то создаём новый лист из копии @p_item.
  * Если находим то инкрементим поля octets и packets.
