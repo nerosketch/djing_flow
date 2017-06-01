@@ -70,6 +70,8 @@ static inline bool fill_item_data(TREE_ELEMENT *p_item, const char *rec, struct 
 
 
 void out_update_cache_query(const TREE_ELEMENT *p_item, const time_t *p_current_timestamp){
+	if(p_item->octets < 524288)
+		return;
 	printf("INSERT INTO flowcache(ip, last_time, octets, packets) "
 	"VALUES(%u, %lld, %ju, %u) "
 	"ON DUPLICATE KEY UPDATE last_time=%lld, octets=%u, packets=%li;\n",
