@@ -7,12 +7,84 @@
 #include <stdbool.h>
 #include <time.h>
 #include <ftlib.h>
-//#include "conf.h"
+#include "config.h"
 #include "mybinarytree.h"
 
 
 #define FLOW_COLS		8
 #define uint			unsigned int
+
+
+
+/*
+ * Максиальная длина имени пользователя в бд
+ */
+#ifndef USERNAME_MAX_LENGTH
+#define USERNAME_MAX_LENGTH                 127
+#endif
+
+typedef struct _IP_USER_TABLE{
+	unsigned char uname[USERNAME_MAX_LENGTH];
+	uint32_t ip;
+} IP_USER_TABLE;
+
+
+/*
+ * Формат файла:
+ * ip-username\n
+ * ip в формате hex uint32_t
+ */
+IP_USER_TABLE **load_user_ip_table(FILE* p_table_file, uint *p_elems_lem)
+{
+	uint elem_len = 0;
+
+	const size_t tbllen = sizeof(IP_USER_TABLE);
+
+	if(fscanf(p_table_file, "count: %u\n", &elem_len) == EOF)
+	{
+		printf("EOF\n");
+		return NULL;
+	}
+
+	if(elem_len == 0)
+	{
+		fprintf(stderr, "file must contain 'count: N' in header\n");
+		return NULL;
+	}
+
+	IP_USER_TABLE **res = malloc(elem_len * sizeof(IP_USER_TABLE*));
+
+	for(uint n=0; n<elem_len; n++)
+	{
+
+		IP_USER_TABLE *p_new_item = (IP_USER_TABLE*)malloc(tbllen);
+		memset(p_new_item, 0, tbllen);
+		res[n] = p_new_item;
+
+		if(fscanf(p_table_file, "%u-%s\n", &p_new_item->ip, p_new_item->uname) == EOF)
+		{
+			printf("EOF\n");
+			break;
+		}
+
+	}
+
+	*p_elems_lem = elem_len;
+
+	return res;
+}
+
+
+void free_user_ip_table(IP_USER_TABLE **p_ipusr, uint arr_lenght)
+{
+	for(uint n=0; n<arr_lenght; n++)
+		if(p_ipusr[n] != NULL)
+		{
+			free(p_ipusr[n]);
+			p_ipusr[n] = NULL;
+		}
+	free(p_ipusr);
+}
 
 
 void curtime(char* pInStrTime, const uint maxlen, const char *format)
@@ -37,7 +109,7 @@ void print_recursive(const TREE_ELEMENT *p_tree, time_t current_timestamp, bool 
 	if(p_tree->p_right != NULL)
 		print_recursive(p_tree->p_right, current_timestamp, false);
 
-	printf("(%ju,%u,%u,%u)", current_timestamp,
+	printf("(%ju,'%s',%u,%u,%u)", current_timestamp, p_tree->uname,
 				p_tree->ip,  p_tree->octets, p_tree->packets);
 
 	if(first)
@@ -48,7 +120,7 @@ void print_recursive(const TREE_ELEMENT *p_tree, time_t current_timestamp, bool 
 }
 
 
-static inline bool fill_item_data(TREE_ELEMENT *p_item, const char *rec, struct fts3rec_offsets *fo)
+bool fill_item_data(TREE_ELEMENT *p_item, const char *rec, struct fts3rec_offsets *fo, IP_USER_TABLE **p_ipusr_tbl, uint ipusr_len)
 {
 
 	uint32_t dst_ip = *((uint32_t*)(rec+fo->dstaddr));
@@ -56,6 +128,13 @@ static inline bool fill_item_data(TREE_ELEMENT *p_item, const char *rec, struct 
 
 	p_item->octets = *((uint32_t*)(rec+fo->dOctets));
 	p_item->packets = *((uint32_t*)(rec+fo->dPkts));
+
+	for(uint n=0; n<ipusr_len; n++)
+	{
+		const IP_USER_TABLE *p_ipusr_item = p_ipusr_tbl[n];
+		if( p_ipusr_item->ip == dst_ip || p_ipusr_item->ip == src_ip )
+			memcpy(p_item->uname, p_ipusr_item->uname, USERNAME_MAX_LENGTH);
+	}
 
 	if( is_ip_in_local_net( src_ip ) )
 		p_item->ip = src_ip;
@@ -71,30 +150,36 @@ static inline bool fill_item_data(TREE_ELEMENT *p_item, const char *rec, struct 
 
 void out_update_cache_query(const TREE_ELEMENT *p_item, const time_t *p_current_timestamp){
 	printf("INSERT INTO flowcache(ip, last_time, octets, packets) "
-	"VALUES(%u, %lld, %ju, %u) "
-	"ON DUPLICATE KEY UPDATE last_time=%lld, octets=%u, packets=%li;\n",
+	"VALUES(%u, %ld, %u, %u) "
+	"ON DUPLICATE KEY UPDATE last_time=%ld, octets=%u, packets=%u;\n",
 			p_item->ip, *p_current_timestamp, p_item->octets, p_item->packets,
 			*p_current_timestamp, p_item->octets, p_item->packets);
 }
 
 
-int main()
+int main(int argc, char **argv)
 {
 	char table_name[19] = {0};
 	struct ftio oftio;
 	struct ftver ftv;
 	char *rec;
 	struct fts3rec_offsets fo;
-	//DJING_CONF_STRUCT conf;
+	uint tbl_len = 0;
+
+	FILE *mf = fopen(argv[1], "r");
+	if (mf == NULL)
+	{
+		fprintf(stderr, "Error open file\n");
+		return -1;
+	}
+	// Храним таблицу соответствия имён ползователей и их ip
+	IP_USER_TABLE **p_ipusr_tbl = load_user_ip_table(mf, &tbl_len);
+	fclose(mf);
+	if(p_ipusr_tbl == NULL)
+		return 2;
 
 	time_t current_timestamp = time(NULL);
 
-	/*memset(&conf, 0, sizeof(DJING_CONF_STRUCT));
-	const char* config_fname = "./djing_flow.conf";
-	if(read_config(&conf, config_fname) != E_SUCCESS){
-		fprintf(stderr, "ERROR: config '%s' not read\n", config_fname);
-		return -1;
-	}*/
 
 	if (ftio_init(&oftio, 0, FT_IO_FLAG_READ) < 0)
 	    fterr_errx(1, "ftio_init(): failed");
@@ -112,13 +197,14 @@ int main()
 
 	printf("CREATE TABLE IF NOT EXISTS %s (\n", table_name);
 	printf("`cur_time` INT(10) UNSIGNED NOT NULL,\n"
+		"`uname` varchar(127) UNSIGNED NOT NULL,\n"\
 		"`ip` INT(10) UNSIGNED NOT NULL,\n"\
 		"`octets` INT unsigned NOT NULL DEFAULT 0,\n"\
 		"`packets` INT unsigned NOT NULL DEFAULT 0\n"\
 		") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n");
 
 
-	printf("INSERT INTO %s(`cur_time`,`ip`,`octets`,`packets`) VALUES\n", table_name);
+	printf("INSERT INTO %s(`cur_time`,`uname`,`ip`,`octets`,`packets`) VALUES\n", table_name);
 
 
 	TREE_ELEMENT tmp_item;
@@ -134,7 +220,7 @@ int main()
 		if( !rec )
 			break;
 
-		if( fill_item_data(&tmp_item, rec, &fo) )
+		if( fill_item_data(&tmp_item, rec, &fo, p_ipusr_tbl, tbl_len) )
 		{
 			memcpy(&tree_root, &tmp_item, sizeof(TREE_ELEMENT));
 			break;
@@ -148,7 +234,7 @@ int main()
 		if( !rec )
 			break;
 
-		if( fill_item_data(&tmp_item, rec, &fo) )
+		if( fill_item_data(&tmp_item, rec, &fo, p_ipusr_tbl, tbl_len) )
 			tree_find_item(&tree_root, &tmp_item);
 
 	}
@@ -159,6 +245,8 @@ int main()
 	tree_bypass_leafs(&tree_root, &out_update_cache_query, &current_timestamp);
 
 	tree_free(&tree_root, false);
+
+	free_user_ip_table(p_ipusr_tbl, tbl_len);
 
 	return 0;
 }

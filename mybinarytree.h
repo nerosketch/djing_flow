@@ -13,11 +13,21 @@ extern "C" {
 #endif
 
 #include <string.h>
+#include "config.h"
 
+
+/*
+ * Максиальная длина имени пользователя в бд
+ */
+#ifndef USERNAME_MAX_LENGTH
+#define USERNAME_MAX_LENGTH                 127
+#endif
+    
 
 typedef struct _TREE_ELEMENT{
     struct _TREE_ELEMENT *p_left;
     struct _TREE_ELEMENT *p_right;
+    unsigned char uname[USERNAME_MAX_LENGTH];
     uint32_t ip;
     unsigned int octets;
     unsigned int packets;
@@ -28,8 +38,7 @@ typedef struct _TREE_ELEMENT{
  * Проверяю что ip в локальной сети 10.0.0.0/8
  */
 #define is_ip_in_local_net(ip) \
-    (ip >> 24 == 10)
-    //((ip) > 0xa000001 && (ip) < 0xafffffe)
+    ((ip & 0xff000000) == 0xa000000)
 
 
 

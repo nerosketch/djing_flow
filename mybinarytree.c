@@ -7,9 +7,9 @@
 #include "mybinarytree.h"
 
 
-#define GT		1		// Больше
-#define EQ		0		// Равно
-#define LT			-1		// Меньше
+#define GT      1       // Больше
+#define EQ      0       // Равно
+#define LT     -1       // Меньше
 
 
 /*
