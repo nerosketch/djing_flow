@@ -1,7 +1,7 @@
 CC=cc
 
-CFLAGS=-c -Wall -O2 -std=c99
-#CFLAGS=-c -Wall -O0 -std=c99 -g -fvar-tracking
+CFLAGS=-c -Wall -MMD -MP -MF -O2 -std=c99
+#CFLAGS=-c -Wall -DDEBUG -MMDI -MP -MF -O0 -std=c99 -g -fvar-tracking
 
 LDFLAGS=-lft
 SOURCES=main.c mybinarytree.c
@@ -18,3 +18,4 @@ $(EXECUTABLE): $(OBJECTS)
 
 clean:
 	rm -rf *.o $(EXECUTABLE)
+

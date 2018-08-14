@@ -10,68 +10,68 @@
 
 uint32_t ip2int(const char* ip)
 {
-	uint32_t res = 0;
-	inet_pton(AF_INET, ip, &res);
-	return htonl(res);
+    uint32_t res = 0;
+    inet_pton(AF_INET, ip, &res);
+    return htonl(res);
 }
 
 
 void tree_fill_item(TREE_ELEMENT *p_item, uint32_t ip,
-	unsigned int octets, unsigned int packets)
+    unsigned int octets, unsigned int packets)
 {
-	p_item->ip = ip;
-	p_item->octets = octets;
-	p_item->packets = packets;
+    p_item->ip = ip;
+    p_item->octets = octets;
+    p_item->packets = packets;
 }
 
 
 
 void test_print_recursive(const TREE_ELEMENT *p_tree)
 {
-	if(p_tree == NULL)
-		return;
+    if(p_tree == NULL)
+        return;
 
-	if(p_tree->p_left != NULL)
-		test_print_recursive(p_tree->p_left);
+    if(p_tree->p_left != NULL)
+        test_print_recursive(p_tree->p_left);
 
-	if(p_tree->p_right != NULL)
-		test_print_recursive(p_tree->p_right);
+    if(p_tree->p_right != NULL)
+        test_print_recursive(p_tree->p_right);
 
-	printf("ip %u, flows %u, packets %u;\n", p_tree->ip, p_tree->octets,
-		p_tree->packets);
+    printf("ip %u, flows %u, packets %u;\n", p_tree->ip, p_tree->octets,
+        p_tree->packets);
 
 }
 
 
 void main_test()
 {
-	TREE_ELEMENT items[12];
-	memset(&items, 0, sizeof(TREE_ELEMENT)*12);
+    TREE_ELEMENT items[12];
+    memset(&items, 0, sizeof(TREE_ELEMENT)*12);
 
-	tree_fill_item(&items[0], ip2int("10.12.1.10"), 512, 5);
-	tree_fill_item(&items[1], ip2int("10.12.1.10"), 512, 5);
-	tree_fill_item(&items[2], ip2int("10.12.1.7"), 512, 5);
-	tree_fill_item(&items[3], ip2int("10.12.1.10"),512, 5);
-	tree_fill_item(&items[4], ip2int("10.12.1.11"), 512, 5);
-	tree_fill_item(&items[5], ip2int("10.12.1.11"), 512, 5);
-	tree_fill_item(&items[6], ip2int("10.12.1.7"), 512, 5);
-	tree_fill_item(&items[7], ip2int("10.12.1.11"), 512, 5);
-	tree_fill_item(&items[8], ip2int("10.12.1.11"), 512, 5);
-	tree_fill_item(&items[9], ip2int("10.12.1.7"), 512, 5);
-	tree_fill_item(&items[10], ip2int("10.12.1.11"), 512, 5);
-	tree_fill_item(&items[11], ip2int("10.12.1.11"), 512, 5);
+    tree_fill_item(&items[0], ip2int("10.12.1.10"), 512, 5);
+    tree_fill_item(&items[1], ip2int("10.12.1.10"), 512, 5);
+    tree_fill_item(&items[2], ip2int("10.12.1.7"), 512, 5);
+    tree_fill_item(&items[3], ip2int("10.12.1.10"),512, 5);
+    tree_fill_item(&items[4], ip2int("10.12.1.11"), 512, 5);
+    tree_fill_item(&items[5], ip2int("10.12.1.11"), 512, 5);
+    tree_fill_item(&items[6], ip2int("10.12.1.7"), 512, 5);
+    tree_fill_item(&items[7], ip2int("10.12.1.11"), 512, 5);
+    tree_fill_item(&items[8], ip2int("10.12.1.11"), 512, 5);
+    tree_fill_item(&items[9], ip2int("10.12.1.7"), 512, 5);
+    tree_fill_item(&items[10], ip2int("10.12.1.11"), 512, 5);
+    tree_fill_item(&items[11], ip2int("10.12.1.11"), 512, 5);
 
-	TREE_ELEMENT tree;
-	memcpy(&tree, &items[0], sizeof(TREE_ELEMENT));
-	//tree_init_tree(&tree);
+    TREE_ELEMENT tree;
+    memcpy(&tree, &items[0], sizeof(TREE_ELEMENT));
+    //tree_init_tree(&tree);
 
-	for(uint n=1; n<12; n++)
-	{
-		if(is_ip_in_local_net(items[n].ip))
-			tree_find_item(&tree, &items[n]);
-	}
+    for(uint n=1; n<12; n++)
+    {
+        if(is_ip_in_local_net(items[n].ip))
+            tree_find_item(&tree, &items[n]);
+    }
 
-	test_print_recursive(&tree);
+    test_print_recursive(&tree);
 
-	tree_free(&tree, false);
+    tree_free(&tree, false);
 }
