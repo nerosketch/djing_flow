@@ -108,7 +108,7 @@ void print_recursive(const TREE_ELEMENT *p_tree, time_t current_timestamp, bool 
     if(p_tree->p_right != NULL)
         print_recursive(p_tree->p_right, current_timestamp, false);
 
-    printf("(%ld,'%u',%u,%u,%u)", current_timestamp, p_tree->uid,
+    printf("(%ld,%u,%u,%u,%u)", current_timestamp, p_tree->uid,
                 p_tree->ip,  p_tree->octets, p_tree->packets);
 
     if(first)
@@ -132,7 +132,7 @@ bool fill_item_data(TREE_ELEMENT *p_item, const char *rec, struct fts3rec_offset
     {
         const IP_USER_TABLE *p_ipusr_item = p_ipusr_tbl[n];
         if( p_ipusr_item->ip == dst_ip || p_ipusr_item->ip == src_ip )
-                    p_item->uid = p_ipusr_item->uid;
+            p_item->uid = p_ipusr_item->uid;
     }
 
     if( is_ip_in_local_net( src_ip ) )
@@ -175,7 +175,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "Error open file\n");
         return -1;
     }
-    // Храним таблицу соответствия имён ползователей и их ip
+    // Храним таблицу соответствия id пользователей и их ip
     IP_USER_TABLE **p_ipusr_tbl = load_user_ip_table(mf, &tbl_len);
     fclose(mf);
     if(p_ipusr_tbl == NULL)
