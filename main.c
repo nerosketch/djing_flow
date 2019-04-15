@@ -169,10 +169,46 @@ int main(int argc, char **argv)
     struct fts3rec_offsets fo;
     uint tbl_len = 0;
 
-    FILE *mf = fopen(argv[1], "r");
+    if(argc < 2)
+    {
+        // too few parameters, print usage
+        printf("Too few parameters, usage:\n");
+        printf("djing_flow -<lc>\n");
+        printf("c - if you want to print cash queries\n");
+        printf("l - if you want to print archive queries\n");
+        return 1;
+    }
+
+    // Config flags
+    int opt = 0;
+    int l = 0;      // Is out long out to statistics archive
+    int c = 0;      // Is out to cache
+    char *p_ipuser_fname = NULL;
+    while((opt = getopt(argc, argv, "lci:")) != -1)
+    {
+        switch(opt)
+        {
+            case 'l':
+                l = 1;
+                break;
+            case 'c':
+                c = 1;
+                break;
+            case 'i':
+                p_ipuser_fname = optarg;
+                break;
+            case '?':
+                return 1;
+            default:
+                abort();
+        }
+    }
+
+    // Read user-ip table
+    FILE *mf = fopen(p_ipuser_fname, "r");
     if (mf == NULL)
     {
-        fprintf(stderr, "Error open file\n");
+        fprintf(stderr, "Error open file %s\n", p_ipuser_fname);
         return -1;
     }
     // Храним таблицу соответствия id пользователей и их ip
@@ -196,18 +232,20 @@ int main(int argc, char **argv)
             return -1;
     }
 
-    curtime(table_name, 19, "flowstat_%d%m%Y");
+    if(l == 1)
+    {
+        curtime(table_name, 19, "flowstat_%d%m%Y");
 
-    printf("CREATE TABLE IF NOT EXISTS %s (\n", table_name);
-    printf("`cur_time` INT(10) UNSIGNED NOT NULL,\n"
-        "`abon_id` INT(11) UNSIGNED NOT NULL,\n"
-        "`ip` INT(10) UNSIGNED NOT NULL,\n"
-        "`octets` INT unsigned NOT NULL DEFAULT 0,\n"
-        "`packets` INT unsigned NOT NULL DEFAULT 0\n"
-        ") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n");
+        printf("CREATE TABLE IF NOT EXISTS %s (\n", table_name);
+        printf("`cur_time` INT(10) UNSIGNED NOT NULL,\n"
+            "`abon_id` INT(11) UNSIGNED NOT NULL,\n"
+            "`ip` INT(10) UNSIGNED NOT NULL,\n"
+            "`octets` INT unsigned NOT NULL DEFAULT 0,\n"
+            "`packets` INT unsigned NOT NULL DEFAULT 0\n"
+            ") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n");
 
-
-    printf("INSERT INTO %s(`cur_time`,`abon_id`,`ip`,`octets`,`packets`) VALUES\n", table_name);
+        printf("INSERT INTO %s(`cur_time`,`abon_id`,`ip`,`octets`,`packets`) VALUES\n", table_name);
+    }
 
 
     TREE_ELEMENT tmp_item;
@@ -243,9 +281,15 @@ int main(int argc, char **argv)
     }
     ftio_close(&oftio);
 
-    print_recursive(&tree_root, current_timestamp, true);
+    if(l == 1)
+        print_recursive(&tree_root, current_timestamp, true);
 
-    tree_bypass_leafs(&tree_root, &out_update_cache_query, &current_timestamp);
+    if(c == 1)
+    {
+        printf("START TRANSACTION;\n");
+        tree_bypass_leafs(&tree_root, &out_update_cache_query, &current_timestamp);
+        printf("COMMIT;\n");
+    }
 
     tree_free(&tree_root, false);
 
