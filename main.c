@@ -193,17 +193,17 @@ int main(int argc, char **argv)
         FT_XFIELD_DPKTS | FT_XFIELD_DOCTETS | FT_XFIELD_SRCADDR | FT_XFIELD_DSTADDR |
         FT_XFIELD_SRCPORT | FT_XFIELD_DSTPORT | FT_XFIELD_PROT)) {
             fterr_warnx("Flow record missing required field for format.");
-            return -1;   
+            return -1;
     }
 
     curtime(table_name, 19, "flowstat_%d%m%Y");
 
     printf("CREATE TABLE IF NOT EXISTS %s (\n", table_name);
     printf("`cur_time` INT(10) UNSIGNED NOT NULL,\n"
-        "`abon_id` INT(11) UNSIGNED NOT NULL,\n"\
-        "`ip` INT(10) UNSIGNED NOT NULL,\n"\
-        "`octets` INT unsigned NOT NULL DEFAULT 0,\n"\
-        "`packets` INT unsigned NOT NULL DEFAULT 0\n"\
+        "`abon_id` INT(11) UNSIGNED NOT NULL,\n"
+        "`ip` INT(10) UNSIGNED NOT NULL,\n"
+        "`octets` INT unsigned NOT NULL DEFAULT 0,\n"
+        "`packets` INT unsigned NOT NULL DEFAULT 0\n"
         ") ENGINE=InnoDB DEFAULT CHARSET=utf8;\n");
 
 
